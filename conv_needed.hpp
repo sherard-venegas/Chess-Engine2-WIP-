@@ -18,3 +18,5 @@ map<int, string> piece_To_Char = {
 	{k, "BKi"}, {q, "BQu"}, {r, "BRo"}, {b, "BBi"}, {n, "BKn"}, {p, "BPw"}, 
 	{K, "WKi"}, {Q, "BQu"}, {R, "WRo"}, {N, "WBi"}, {N, "WKn"}, {P, "WPw"}
 };
+
+map<string, int> side = { {"w", 0}, {"b", 1} };

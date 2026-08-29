@@ -16,7 +16,7 @@ map<char, int> char_To_Piece = {
 //map for easy numeric translation for easy board prints
 map<int, string> piece_To_Char = {
 	{k, "BKi"}, {q, "BQu"}, {r, "BRo"}, {b, "BBi"}, {n, "BKn"}, {p, "BPw"}, 
-	{K, "WKi"}, {Q, "BQu"}, {R, "WRo"}, {B, "WBi"}, {N, "WKn"}, {P, "WPw"}
+	{K, "WKi"}, {Q, "WQu"}, {R, "WRo"}, {B, "WBi"}, {N, "WKn"}, {P, "WPw"}
 };
 
 map<string, int> coord = {

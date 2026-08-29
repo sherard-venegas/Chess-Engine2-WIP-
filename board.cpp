@@ -200,4 +200,8 @@ class Board
         bool is_atkd(int square){}
 
         bool end_game(){}
+
+        int *get_board(){
+            return board;
+        }
 };

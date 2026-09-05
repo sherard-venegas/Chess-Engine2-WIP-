@@ -19,6 +19,7 @@ map<int, string> piece_To_Char = {
 	{K, "WKi"}, {Q, "WQu"}, {R, "WRo"}, {B, "WBi"}, {N, "WKn"}, {P, "WPw"}
 };
 
+//map for coordinate conversions
 map<string, int> coord = {
 	{"a1", 0}, {"a2", 1}, {"a3", 2}, {"a4", 3}, {"a5", 4}, {"a6", 5}, {"a7", 6}, {"a8", 7},
 	{"b1", 8}, {"b2", 9}, {"b3", 10}, {"b4", 11}, {"b5", 12}, {"b6", 13}, {"b7", 14}, {"b8", 15},
@@ -30,4 +31,4 @@ map<string, int> coord = {
 	{"h1", 56}, {"h2", 57}, {"h3", 58}, {"h4", 59}, {"h5", 60}, {"h6", 61}, {"h7", 62}, {"h8", 63}
 };
 
-map<string, int> side = { {"w", 0}, {"b", 1} };
+//map<string, int> s_to_player = { {"w", white}, {"b", black} };

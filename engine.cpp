@@ -1,4 +1,8 @@
 #include <iostream>
+#include <string>
+#include <ostream>
+#include <sstream>
+#include "conv_needed.hpp"
 using namespace std;
 
 class Engine
@@ -19,6 +23,12 @@ class Engine
         uint64_t white_rook = 0x00000000;
         uint64_t white_queen = 0x00000000;
         uint64_t white_king = 0x00000000;
+        //not rank, the first bit next to the semi colon is the LSB
+        uint64_t not_A_file = 0b1111111011111110111111101111111011111110111111101111111011111110;
+        uint64_t not_B_file = 0b1111110111111101111111011111110111111101111111011111110111111101;
+        uint64_t not_G_file = 0b1011111110111111101111111011111110111111101111111011111110111111;
+        uint64_t not_H_file = 0b0111111101111111011111110111111101111111011111110111111101111111;
+
 
     public:
         Engine ()
@@ -149,6 +159,58 @@ class Engine
                 i++;
                 com = (com << 1);
             }
+        }
+
+        //piece attacks
+        uint64_t pawn_attacks(int play){
+            uint64_t attacks = 0;
+            uint64_t pawns = play ? black_pawn : white_pawn;
+
+            if(play){
+                attacks |= ((not_A_file & pawns) << 7);
+                attacks |= ((not_H_file & pawns) << 9);
+            }
+            else{
+                attacks |= ((not_A_file & pawns) >> 9);
+                attacks |= ((not_H_file & pawns) >> 7);
+            }
+
+            return attacks;
+        }
+
+        uint64_t knight_attacks(int play){
+            uint64_t attacks = 0;
+            uint64_t knights = play ? black_knight : white_knight;
+
+            attacks |= (not_H_file & not_G_file & knights) << 10;
+            attacks |= (not_H_file & knights) << 17;
+            attacks |= (not_H_file & not_G_file & knights) >> 6;
+            attacks |= (not_H_file & knights) >> 15;
+
+            attacks |= (not_A_file & not_B_file & knights) >> 10;
+            attacks |= (not_A_file & knights) >> 17;
+            attacks |= (not_A_file & not_B_file & knights) << 6;
+            attacks |= (not_A_file & knights) << 15;
+
+            return attacks;
+        }
+
+        uint64_t king_attacks(int play){
+            uint64_t attacks = 0;
+            uint64_t king = play ? black_king : white_king;
+
+            attacks |= ((not_A_file & king) >> 9);
+            attacks |= ((not_A_file & king) >> 1);
+            attacks |= ((not_A_file & king) << 7);
+
+            attacks |= ((not_H_file & king) << 9);
+            attacks |= ((not_H_file & king) << 1);
+            attacks |= ((not_H_file & king) >> 7);
+
+            attacks |= (king << 8);
+            attacks |= (king >> 8);
+
+            return attacks;
         }
 
         //need to be able to evaluate how favourable a current position is

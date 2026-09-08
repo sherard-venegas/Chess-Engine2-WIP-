@@ -74,41 +74,41 @@ class Board
                     switch(cc){
                         case 'K':
                             king_squares[0] = ind;
-                            white_king += (1 << ind);
+                            white_king += (uint64_t)1 << ind;
                             break;
                         case 'Q':
-                            white_queen += (1 << ind);
+                            white_queen += (uint64_t)1 << ind;
                             break;
                         case 'R':
-                            white_rook += (1 << ind);
+                            white_rook += (uint64_t)1 << ind;
                             break;
                         case 'B':
-                            white_bishop += (1 << ind);
+                            white_bishop += (uint64_t)1 << ind;
                             break;
                         case 'N':
-                            white_knight += (1 << ind);
+                            white_knight += (uint64_t)1 << ind;
                             break;
                         case 'P':
-                            white_pawn += (1 << ind);
+                            white_pawn += (uint64_t)1 << ind;
                             break;
                         case 'k':
                             king_squares[1] = ind;
-                            black_king += (1 << ind);
+                            black_king += (uint64_t)1 << ind;
                             break;
                         case 'q':
-                            black_queen += (1 << ind);
+                            black_queen += (uint64_t)1 << ind;
                             break;
                         case 'r':
-                            black_rook += (1 << ind);
+                            black_rook += (uint64_t)1 << ind;
                             break;
                         case 'b':
-                            black_bishop += (1 << ind);
+                            black_bishop += (uint64_t)1 << ind;
                             break;
                         case 'n':
-                            black_knight += (1 << ind);
+                            black_knight += (uint64_t)1 << ind;
                             break;
                         case 'p':
-                            black_pawn += (1 << ind);
+                            black_pawn += (uint64_t)1 << ind;
                     }
 
                     ind++;
@@ -120,7 +120,6 @@ class Board
         }
 
         //the ability to see the board will be important
-/*
         void print_board(){
             string board_str = "";
 
@@ -137,7 +136,8 @@ class Board
             board_str += "\n\n";
 
             for(int i = 0; i < 64; i++){
-                int cur_p = board[i];
+                int cur_p = id_piece(i);
+                
                 if(i % 8 == 0){
                     board_str += (char)( ( (64 - i) / 8) + '0');
                     board_str += "\t";
@@ -147,13 +147,13 @@ class Board
                 }
 
                 else if(i % 8 == 7){
-                    if(cur_p != 0){ board_str += piece_To_Char[cur_p] + " |\n"; }
+                    if(cur_p != 0){ board_str += piece_To_Char[cur_p] + " |\n";}
 
                     else{ board_str += "    |\n"; }
                 }
 
                 else{
-                    if(cur_p != 0){ board_str += piece_To_Char[cur_p] + " | "; }
+                    if(cur_p != 0){ board_str += piece_To_Char[cur_p] + " | ";}
 
                     else{ board_str += "    | "; }
                 }
@@ -161,8 +161,27 @@ class Board
 
             cout << board_str;
         }
-*/
-        void print_bitb(){}
+
+        int id_piece(int square){
+            uint64_t pos = (uint64_t)1 << square;
+
+            if( (black_king & pos) ){ return k; }
+            else if( (black_queen & pos) ){ return q; }
+            else if( (black_rook & pos) ){ return r; }
+            else if( (black_bishop & pos) ){ return b; }
+            else if( (black_knight & pos) ){ return n; }
+            else if( (black_pawn & pos) ){ return p; }
+            else if( (white_king & pos) ){ return K; }
+            else if( (white_queen & pos) ){ return Q; }
+            else if( (white_rook & pos) ){ return R; }
+            else if( (white_bishop & pos) ){ return B; }
+            else if( (white_knight & pos) ){ return N; }
+            else if( (white_pawn & pos) ){ return P; }
+            
+            else{
+                return 0;
+            }
+        }
 
         //move making, undoing and other stuff to check if move is legal
         void make_move(){
@@ -300,4 +319,19 @@ class Board
         bool is_atkd(int square){}
 
         bool end_game(){}
+
+        //get functions for the bitboards for the engine testing
+
+        uint64_t get_BK(){ return black_king; }
+        uint64_t get_BQ(){ return black_queen; }
+        uint64_t get_BR(){ return black_rook; }
+        uint64_t get_BB(){ return black_bishop; }
+        uint64_t get_BN(){ return black_knight; }
+        uint64_t get_BP(){ return black_pawn; }
+        uint64_t get_WK(){ return white_king; }
+        uint64_t get_WQ(){ return white_queen; }
+        uint64_t get_WR(){ return white_rook; }
+        uint64_t get_WB(){ return white_bishop; }
+        uint64_t get_WN(){ return white_knight; }
+        uint64_t get_WP(){ return white_pawn; }
 };

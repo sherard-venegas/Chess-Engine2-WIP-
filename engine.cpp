@@ -3,6 +3,7 @@
 #include <ostream>
 #include <sstream>
 #include "conv_needed.hpp"
+#include "magicbitb.cpp"
 using namespace std;
 
 class Engine
@@ -87,7 +88,7 @@ class Engine
             }
         }
 
-        void set_boards(int BK, int BQ, int BR, int BB, int BN, int BP, int WK, int WQ, int WR, int WB, int WN, int WP){
+        void set_boards(uint64_t BK, uint64_t BQ, uint64_t BR, uint64_t BB, uint64_t BN, uint64_t BP, uint64_t WK, uint64_t WQ, uint64_t WR, uint64_t WB, uint64_t WN, uint64_t WP){
             black_king = BK;
             black_queen = BQ;
             black_rook = BR;
@@ -212,6 +213,12 @@ class Engine
 
             return attacks;
         }
+
+        void print_mask_funcR(int square){ print_board(rmask(square)); }
+
+        void print_mask_funcB(int square){ print_board(bmask(square)); }
+
+        void print_mask_funcQ(int square){ print_board(qmask(square)); }
 
         //need to be able to evaluate how favourable a current position is
         int eval_pos(){}

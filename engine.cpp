@@ -218,8 +218,6 @@ class Engine
 
         void print_mask_funcB(int square){ print_board(bmask(square)); }
 
-        void print_mask_funcQ(int square){ print_board(qmask(square)); }
-
         //need to be able to evaluate how favourable a current position is
         int eval_pos(){}
 

@@ -31,4 +31,4 @@ map<string, int> coord = {
 	{"h1", 56}, {"h2", 57}, {"h3", 58}, {"h4", 59}, {"h5", 60}, {"h6", 61}, {"h7", 62}, {"h8", 63}
 };
 
-//map<string, int> s_to_player = { {"w", white}, {"b", black} };
+map<string, int> s_to_player = { {"w", white}, {"b", black} };

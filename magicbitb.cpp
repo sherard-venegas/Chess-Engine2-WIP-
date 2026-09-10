@@ -17,11 +17,12 @@ uint64_t random_uint64(){
     return u1 | (u2 << 16) | (u3 << 32) | (u4 << 48);
 }
 
-//makes low non zero bit random number
+//makes low non zero bit random number by ceating multiple random numbers and doing a bitwise & 
 uint64_t random_uint64_fewbits(){
     return random_uint64() & random_uint64() & random_uint64();
 }
 
+//counts how many bits are 1 in a 64 bit integer
 int count_1s(uint64_t b){
     int r;
     for(r = 0; b; r++, b &= b - 1);
@@ -35,11 +36,12 @@ const int BitTable[64] = {
     58, 20, 37, 17, 36, 8
 };
 
+//removes the LSB and returns the corresponding square / index of the bit
 int pop_1st_bit(uint64_t* bb){
-    uint64_t b = *bb ^ (*bb - 1);
-    unsigned int fold = (unsigned)( (b & 0xffffffff) ^ (b >> 32));
-    *bb &= (*bb - 1);
-    return BitTable[(fold * 0x783a9b23) >> 26];
+    uint64_t b = *bb ^ (*bb - 1);  // gets the actual values of the bit
+    unsigned int fold = (unsigned)( (b & 0xffffffff) ^ (b >> 32)); // if the LSB is beyond the 32 bits, it moves it down othwerwise keeps it there
+    *bb &= (*bb - 1);  // removes LSB from the actual 64 bit int 
+    return BitTable[(fold * 0x783a9b23) >> 26];// uses perfect hashing to find the specific position of the LSB
 }
 
 uint64_t index_to_uint64(int index, int bits, uint64_t m){
@@ -54,32 +56,170 @@ uint64_t index_to_uint64(int index, int bits, uint64_t m){
     return result;
 }
 
+//mask functions create the mask to get the potential blockers for both the rook or the bishops
+//the edge ranks and files do not get checked as it doesnt matter if there is a blocker or not
 uint64_t rmask(int square){
-    uint64_t atk = 0;
+    uint64_t mask = 0;
     int tfile = square % 8;
     int trank = square / 8;
 
-    for(int r = trank + 1; r <= 6; r++){ atk |= ((uint64_t)1 << (r * 8 + tfile)); }
-    for(int r = trank - 1; r >= 1; r--){ atk |= ((uint64_t)1 << (r * 8 + tfile)); }
-    for(int f = tfile + 1; f <= 6; f++){ atk |= ((uint64_t)1 << (f + trank * 8)); }
-    for(int f = tfile - 1; f >= 1; f--){ atk |= ((uint64_t)1 << (f + trank * 8)); }
+    for(int r = trank + 1; r <= 6; r++){ mask |= ((uint64_t)1 << (r * 8 + tfile)); }
+    for(int r = trank - 1; r >= 1; r--){ mask |= ((uint64_t)1 << (r * 8 + tfile)); }
+    for(int f = tfile + 1; f <= 6; f++){ mask |= ((uint64_t)1 << (f + trank * 8)); }
+    for(int f = tfile - 1; f >= 1; f--){ mask |= ((uint64_t)1 << (f + trank * 8)); }
 
-    return atk;
+    return mask;
 }
 
 uint64_t bmask(int square){
+    uint64_t mask = 0;
+    int tfile = square % 8;
+    int trank = square / 8;
+
+    for(int r = trank + 1, f = tfile + 1; r <= 6 && f <= 6; r++, f++){ mask |= ((uint64_t)1 << (r * 8 + f)); }
+    for(int r = trank + 1, f = tfile - 1; r <= 6 && f >= 1; r++, f--){ mask |= ((uint64_t)1 << (r * 8 + f)); }
+    for(int r = trank - 1, f = tfile + 1; r >= 1 && f <= 6; r--, f++){ mask |= ((uint64_t)1 << (r * 8 + f)); }
+    for(int r = trank - 1, f = tfile - 1; r >= 1 && f >= 1; r--, f--){ mask |= ((uint64_t)1 << (r * 8 + f)); }
+
+    return mask;
+}
+
+//using the blocker mask, we make an unsigned 64 bit int which shows us where the rook or bishop can attack up to
+uint64_t rAtk(int square, uint64_t blocks){
     uint64_t atk = 0;
     int tfile = square % 8;
     int trank = square / 8;
 
-    for(int r = trank + 1, f = tfile + 1; r <= 6 && f <= 6; r++, f++){ atk |= ((uint64_t)1 << (r * 8 + f)); }
-    for(int r = trank + 1, f = tfile - 1; r <= 6 && f >= 1; r++, f--){ atk |= ((uint64_t)1 << (r * 8 + f)); }
-    for(int r = trank - 1, f = tfile + 1; r >= 1 && f <= 6; r--, f++){ atk |= ((uint64_t)1 << (r * 8 + f)); }
-    for(int r = trank - 1, f = tfile - 1; r >= 1 && f >= 1; r--, f--){ atk |= ((uint64_t)1 << (r * 8 + f)); }
+    for(int r = trank + 1; r <= 6; r++){
+        atk |= ((uint64_t)1 << (r * 8 + tfile));
+        if( blocks & ((uint64_t)1 << (r * 8 + tfile)) ){ break; }
+    }
+
+    for(int r = trank - 1; r >= 1; r--){
+        atk |= ((uint64_t)1 << (r * 8 + tfile));
+        if( blocks & ((uint64_t)1 << (r * 8 + tfile)) ){ break; }
+    }
+
+    for(int f = tfile + 1; f <= 6; f++){
+        atk |= ((uint64_t)1 << (f + trank * 8));
+        if( blocks & ((uint64_t)1 << (trank* 8 + f)) ){ break; }
+    }
+
+    for(int f = tfile - 1; f >= 1; f--){
+        atk |= ((uint64_t)1 << (f + trank * 8));
+        if( blocks & ((uint64_t)1 << (trank * 8 + f)) ){ break; }
+    }
 
     return atk;
 }
 
-uint64_t qmask(int square){
-    return bmask(square) | rmask(square);
+uint64_t bAtk(int square, uint64_t blocks){
+    uint64_t atk = 0;
+    int tfile = square % 8;
+    int trank = square / 8;
+
+    for(int r = trank + 1, f = tfile + 1; r <= 6 && f <= 6; r++, f++){
+        atk |= ((uint64_t)1 << (r * 8 + f));
+        if(blocks & ((uint64_t)1 << (r * 8 + f))){ break; }
+    }
+
+    for(int r = trank + 1, f = tfile - 1; r <= 6 && f >= 1; r++, f--){
+        atk |= ((uint64_t)1 << (r * 8 + f));
+        if(blocks & ((uint64_t)1 << (r * 8 + f))){ break; }
+    }
+    for(int r = trank - 1, f = tfile + 1; r >= 1 && f <= 6; r--, f++){
+        atk |= ((uint64_t)1 << (r * 8 + f));
+        if(blocks & ((uint64_t)1 << (r * 8 + f))){ break; }
+    }
+    for(int r = trank - 1, f = tfile - 1; r >= 1 && f >= 1; r--, f--){
+        atk |= ((uint64_t)1 << (r * 8 + f));
+        if(blocks & ((uint64_t)1 << (r * 8 + f))){ break; }
+    }
+
+    return atk;
 }
+
+//changes the board into the specific index using the magic
+int transform(uint64_t b, uint64_t magic, int bits){
+    #if defined(USE_32_BIT_MANIPULATIONS)
+        return (unsigned)( (int)b * (int)magic ^ (int)(b >> 32) * (int)(magic >> 32)) >> (32 - bits);
+    #else
+        return (int)((b * magic) >> (64 - bits));
+    #endif
+}
+
+//looks for magics by making all possible blocker baord combos and finding the best suited magic number
+uint64_t find_magic(int sq, int m, int bishop){
+    uint64_t mask, b[4096], a[4096], used[4096], magic;
+    int i, j, k, n, fail;
+
+    //figures out which mask to use based on if we are using the bihop board or not and counts how many
+    //1s are present in the mask for the sq
+    mask = bishop ? bmask(sq) : rmask(sq);
+    n = count_1s(mask);
+
+    for(i = 0; i < (1 << n); i++){
+        b[i] = index_to_uint64(i, n, mask);
+        a[i] = bishop ? bAtk(sq, b[i]) : rAtk(sq, b[i]);
+    }
+
+    for(k = 0; k < 100000000; k++){
+        magic = random_uint64_fewbits();
+
+        if(count_1s((mask * magic) & 0xFF00000000000000ULL) < 6){ continue; }
+        for(i = 0; i < 4096; i++){ used[i] = 0ULL; }
+        for(i = 0, fail = 0; !fail && i < (1 << n); i++){
+            j = transform(b[i], magic, m);
+
+            if(used[j] == 0ULL){ used[j] = a[i]; }
+            else if(used[j] != a[i]){ fail = 1;}
+        }
+        if(!fail){ return magic; }
+    }
+
+    printf("***Failed***\n");
+    return 0ULL;
+}
+
+int RBits[64] = {
+    12, 11, 11, 11, 11, 11, 11, 12,
+    11, 10, 10, 10, 10, 10, 10, 11,
+    11, 10, 10, 10, 10, 10, 10, 11,
+    11, 10, 10, 10, 10, 10, 10, 11,
+    11, 10, 10, 10, 10, 10, 10, 11,
+    11, 10, 10, 10, 10, 10, 10, 11,
+    11, 10, 10, 10, 10, 10, 10, 11,
+    12, 11, 11, 11, 11, 11, 11, 12
+};
+
+int BBits[64] = {
+    6, 5, 5, 5, 5, 5, 5, 6,
+    5, 5, 5, 5, 5, 5, 5, 5,
+    5, 5, 7, 7, 7, 7, 5, 5,
+    5, 5, 7, 9, 9, 7, 5, 5,
+    5, 5, 7, 9, 9, 7, 5, 5,
+    5, 5, 7, 7, 7, 7, 5, 5,
+    5, 5, 5, 5, 5, 5, 5, 5,
+    6, 5, 5, 5, 5, 5, 5, 6
+};
+
+//brings everything together to make all the magic numbers for each square
+/*
+int main(){
+    int square;
+
+    printf("const uint64_t RMagic[64] = {\n");
+    for(square = 0; square < 64; square++){
+        printf("  0x%llxULL,\n", find_magic(square, RBits[square], 0));
+    }
+    printf("};\n\n");
+
+    printf(" const uint64_t BMagic[64] = {\n");
+    for(square = 0; square < 64; square++){
+        printf("  0x%llxULL,\n", find_magic(square, BBits[square], 1));
+    }
+    printf("};\n\n");
+
+    return 0;
+}
+*/

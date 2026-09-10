@@ -33,7 +33,7 @@ class Board
         uint64_t not_G_file = 0b1011111110111111101111111011111110111111101111111011111110111111;
         uint64_t not_H_file = 0b0111111101111111011111110111111101111111011111110111111101111111;
 
-        int castle_rights[4];
+        int castle_rights;
         int curr_player = white;
         Engine bob;
 
@@ -112,6 +112,29 @@ class Board
                     }
 
                     ind++;
+                }
+                curr_player = s_to_player[FENsplit.at(1)];
+                string cast_r = FENsplit.at(2);
+
+                for(int i = 0; i < cast_r.length(); i++){
+                    char cc = cast_r[i];
+                    
+                    switch(cc){
+                        case 'K':
+                            castle_rights++;
+                            break;
+                        case 'Q':
+                            castle_rights += 2;
+                            break;
+                        case 'k':
+                            castle_rights += 4;
+                            break;
+                        case 'q':
+                            castle_rights += 8;
+                            break;
+                        default:
+                            break;
+                    }
                 }
             }
             

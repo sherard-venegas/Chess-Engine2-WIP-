@@ -19,6 +19,6 @@ int main(){
     cout << "\n";
     dave.print_board( dave.king_attacks(0) );
     cout << "\n";
-    dave.print_mask_funcQ(27);
+    dave.print_board(~jim.get_WK());
     return 0;
 }

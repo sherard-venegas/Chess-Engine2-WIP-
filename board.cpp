@@ -222,6 +222,11 @@ class Board
             uint64_t* piece_board = figure_board(f);
             uint64_t* taken_board = figure_board(f);
 
+            *piece_board += ( (uint64_t) 1 << t );
+            *piece_board -= ( (uint64_t) 1 << f );
+
+            if(taken_board != nullptr){ *taken_board -= ((uint64_t) 1 << t); }
+
             while( !is_legal(f, t, piece_board, taken_board) ){
                 cout << "enter the source square: ";
                 f = choose_sq();
@@ -296,6 +301,7 @@ class Board
 
         bool valid_sq(string sq){
             try{
+                //we use Map.at( {data type of index} var_name ) as it returns a runtime error if the index does not exist
                 coord.at(sq);
                 return true;
             }
@@ -306,10 +312,10 @@ class Board
         }
 
         void undo_move(int from, int target, uint64_t* piece_board, uint64_t* taken_board){
-            *piece_board -= (1 << target);
-            *piece_board += (1 << from);
+            *piece_board -= ((uint64_t) 1 << target);
+            *piece_board += ((uint64_t) 1 << from);
 
-            if(taken_board != nullptr){ *taken_board += (1 << target); }
+            if(taken_board != nullptr){ *taken_board += ((uint64_t)1 << target); }
         }
 
         bool is_legal(int from, int target, uint64_t* piece_board, uint64_t* taken_board){

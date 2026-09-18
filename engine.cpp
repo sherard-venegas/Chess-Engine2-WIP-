@@ -36,6 +36,20 @@ class Engine
         {
             ahead = 10;
         }
+        Engine (uint64_t BK, uint64_t BQ, uint64_t BR, uint64_t BB, uint64_t BN, uint64_t BP, uint64_t WK, uint64_t WQ, uint64_t WR, uint64_t WB, uint64_t WN, uint64_t WP){
+            black_king = BK;
+            black_queen = BQ;
+            black_rook = BR;
+            black_bishop = BB;
+            black_knight = BN;
+            black_pawn = BP;
+            white_king = WK;
+            white_queen = WQ;
+            white_rook = WR;
+            white_bishop = WB;
+            white_knight = WN;
+            white_pawn = WP;
+        }
 
         void set_piles(int piles){
             ahead = piles;
@@ -86,21 +100,6 @@ class Engine
                         break;
                 }
             }
-        }
-
-        void set_boards(uint64_t BK, uint64_t BQ, uint64_t BR, uint64_t BB, uint64_t BN, uint64_t BP, uint64_t WK, uint64_t WQ, uint64_t WR, uint64_t WB, uint64_t WN, uint64_t WP){
-            black_king = BK;
-            black_queen = BQ;
-            black_rook = BR;
-            black_bishop = BB;
-            black_knight = BN;
-            black_pawn = BP;
-            white_king = WK;
-            white_queen = WQ;
-            white_rook = WR;
-            white_bishop = WB;
-            white_knight = WN;
-            white_pawn = WP;
         }
 
         void print_bitb(int num){
@@ -226,8 +225,55 @@ class Engine
 
         int generate_moves(){}
 
-        //need functions to make and undo moves, paramaeters subject to change
-        void make_move(int pos, int target){}
+        //this is to figure out the address of thetarget board and the piece to be moved board
+        uint64_t* figure_board(uint64_t from){
+            uint64_t target_sq = 1 << from;
 
-        void undo_move(int pos, int target){}
+            if(target_sq & white_pawn > 0){ return &white_pawn; }
+
+            else if(target_sq & white_pawn > 0){ return &white_pawn; }
+
+            else if(target_sq & white_knight > 0){ return &white_knight; }
+
+            else if(target_sq & white_bishop > 0){ return &white_bishop; }
+
+            else if(target_sq & white_rook > 0){ return &white_rook; }
+
+            else if(target_sq & white_queen > 0){ return &white_queen; }
+
+            else if(target_sq & white_king > 0){ return &white_king; }
+
+            else if(target_sq & black_pawn > 0){ return &black_pawn; }
+
+            else if(target_sq & black_knight > 0){ return &black_knight; }
+
+            else if(target_sq & black_bishop > 0){ return &black_bishop; }
+
+            else if(target_sq & black_rook > 0){ return &black_rook; }
+
+            else if(target_sq & black_queen > 0){ return &black_queen; }
+
+            else if(target_sq & black_king > 0){ return &black_king; }
+
+            else{
+                return nullptr;
+            }
+        }
+
+        //need functions to make and undo moves, paramaeters subject to change
+        void make_move(int pos, int target){
+            uint64_t* from = figure_board(pos);
+            uint64_t* to = figure_board(pos);
+
+            if(to != nullptr){ *to -= ( (uint64_t) 1 << target ); }
+        }
+
+        void undo_move(int pos, int target, uint64_t* piece_b, uint64_t* taken_p){
+            *piece_b -= ((uint64_t) 1 << target);
+            *piece_b += ((uint64_t) 1 << pos);
+
+            if(taken_p != nullptr){ *taken_p += ( (uint64_t) 1 << target ); }
+        }
+
+        bool valid_move(){}
 };

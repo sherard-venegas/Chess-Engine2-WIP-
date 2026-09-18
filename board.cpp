@@ -225,7 +225,7 @@ class Board
             *piece_board += ( (uint64_t) 1 << t );
             *piece_board -= ( (uint64_t) 1 << f );
 
-            if(taken_board != nullptr){ *taken_board -= ((uint64_t) 1 << t); }
+            if(taken_board != nullptr){ *taken_board -= ((uint64_t) 1 << t);}
 
             while( !is_legal(f, t, piece_board, taken_board) ){
                 cout << "enter the source square: ";

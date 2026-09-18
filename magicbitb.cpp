@@ -3,6 +3,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <ostream>
+#include "conv_needed.hpp"
 using namespace std;
 
 #define USE_32_BIT_MULTIPLICATIONS
@@ -28,13 +29,6 @@ int count_1s(uint64_t b){
     for(r = 0; b; r++, b &= b - 1);
     return r;
 }
-
-const int BitTable[64] = {
-    64, 30, 3, 32, 25, 41, 22, 33, 15, 50, 42, 13, 11, 53, 19, 34, 61, 29, 2,
-    51, 21, 43, 45, 10, 18, 47, 1, 54, 9, 57, 0, 35, 62, 31, 40, 4, 49, 5, 52,
-    26, 60, 6, 23, 44, 46, 27, 56, 16, 7, 39, 48, 24, 59, 14, 12, 55, 38, 28,
-    58, 20, 37, 17, 36, 8
-};
 
 //removes the LSB and returns the corresponding square / index of the bit
 int pop_1st_bit(uint64_t* bb){
@@ -152,91 +146,43 @@ int transform(uint64_t b, uint64_t magic, int bits){
 }
 
 //looks for magics by making all possible blocker baord combos and finding the best suited magic number
+
 uint64_t find_magic(int sq, int m, int bishop){
     // a is the attacks, used is the usd attacks and b is the occupancies
-    uint64_t mask, b[4096], a[4096], used[4096], magic;
+    uint64_t mask, used[4096], magic;
+    uint64_t* a = bishop ? b_atk_tables[sq] : r_atk_tables[sq];
+    uint64_t* o = bishop ? b_occ_tables[sq] : r_occ_tables[sq];
     int i, j, k, n, fail;
-
     //figures out which mask to use based on if we are using the bihop board or not and counts how many
     //1s are present in the mask for the sq
     mask = bishop ? bmask(sq) : rmask(sq);
     n = count_1s(mask); //counts how many relevant bits are present
-
     //generates every possible occupancy board for the given square and creates an attack board for it
     for(i = 0; i < (1 << n); i++){ // 1 << n is the occupancy indices
-        b[i] = index_to_uint64(i, n, mask); //crates an occupancy map for the current index of the occupancies array
-        a[i] = bishop ? bAtk(sq, b[i]) : rAtk(sq, b[i]);
+        o[i] = index_to_uint64(i, n, mask); //crates an occupancy map for the current index of the occupancies array
+        a[i] = bishop ? bAtk(sq, o[i]) : rAtk(sq, o[i]);
     }
-
-    //this process here then creates a low pseudo random number for the array of magic bit boards and attacks so that we create a perfect hash to quickly find
+    //this process here then creates a low pseudo random number for the array of magic bit boards and attacks so that we create a perfect hash
     //the right magic number to always lead to the correct attack board
     for(k = 0; k < 100000000; k++){
         magic = random_uint64_fewbits();
-
         if(count_1s((mask * magic) & 0xFF00000000000000ULL) < 6){ continue; }
         for(i = 0; i < 4096; i++){ used[i] = 0ULL; }
         for(i = 0, fail = 0; !fail && i < (1 << n); i++){
-            j = transform(b[i], magic, m);
-
+            j = transform(o[i], magic, m);
             if(used[j] == 0ULL){ used[j] = a[i]; }
             else if(used[j] != a[i]){ fail = 1; }
         }
         if(!fail){ return magic; }
     }
-
     printf("***Failed***\n");
     return 0ULL;
 }
 
-//relevant occupancy bit count for each position a rook or bishop is in for each square
-int RBits[64] = {
-    12, 11, 11, 11, 11, 11, 11, 12,
-    11, 10, 10, 10, 10, 10, 10, 11,
-    11, 10, 10, 10, 10, 10, 10, 11,
-    11, 10, 10, 10, 10, 10, 10, 11,
-    11, 10, 10, 10, 10, 10, 10, 11,
-    11, 10, 10, 10, 10, 10, 10, 11,
-    11, 10, 10, 10, 10, 10, 10, 11,
-    12, 11, 11, 11, 11, 11, 11, 12
-};
-
-int BBits[64] = {
-    6, 5, 5, 5, 5, 5, 5, 6,
-    5, 5, 5, 5, 5, 5, 5, 5,
-    5, 5, 7, 7, 7, 7, 5, 5,
-    5, 5, 7, 9, 9, 7, 5, 5,
-    5, 5, 7, 9, 9, 7, 5, 5,
-    5, 5, 7, 7, 7, 7, 5, 5,
-    5, 5, 5, 5, 5, 5, 5, 5,
-    6, 5, 5, 5, 5, 5, 5, 6
-};
-
-void find_rook_magics(){
+void find_all_sq_magics(int bishop){
     int square;
-
-    printf("const uint64_t RMagic[64] = {\n");
+    uint64_t* magics = bishop ? b_magics : r_magics;
     for(square = 0; square < 2; square++){
-        printf("  0x%llxULL,\n", find_magic(square, RBits[square], 0));
+        magics[square] = find_magic(square, RBits[square], 0);
     }
-    printf("};\n\n");
 }
-//brings everything together to make all the magic numbers for each square
-/*
-int main(){
-    int square;
-
-    printf("const uint64_t RMagic[64] = {\n");
-    for(square = 0; square < 64; square++){
-        printf("  0x%llxULL,\n", find_magic(square, RBits[square], 0));
-    }
-    printf("};\n\n");
-
-    printf(" const uint64_t BMagic[64] = {\n");
-    for(square = 0; square < 64; square++){
-        printf("  0x%llxULL,\n", find_magic(square, BBits[square], 1));
-    }
-    printf("};\n\n");
-
-    return 0;
-}
-*/

@@ -2,7 +2,9 @@
 #include <string>
 #include <ostream>
 #include <sstream>
-#include "conv_needed.hpp"
+#include <cstdlib>
+#include <stdio.h>
+#include <stdlib.h>
 #include "magicbitb.cpp"
 using namespace std;
 
@@ -30,12 +32,12 @@ class Engine
         uint64_t not_G_file = 0b1011111110111111101111111011111110111111101111111011111110111111;
         uint64_t not_H_file = 0b0111111101111111011111110111111101111111011111110111111101111111;
 
-
     public:
         Engine ()
         {
             ahead = 10;
         }
+
         Engine (uint64_t BK, uint64_t BQ, uint64_t BR, uint64_t BB, uint64_t BN, uint64_t BP, uint64_t WK, uint64_t WQ, uint64_t WR, uint64_t WB, uint64_t WN, uint64_t WP){
             black_king = BK;
             black_queen = BQ;
@@ -49,6 +51,9 @@ class Engine
             white_bishop = WB;
             white_knight = WN;
             white_pawn = WP;
+            ahead = 10;
+            find_all_sq_magics(0);
+            find_all_sq_magics(1);
         }
 
         void set_piles(int piles){
@@ -216,7 +221,7 @@ class Engine
         void print_mask_funcR(int square){ print_board(rmask(square)); }
 
         void print_mask_funcB(int square){ print_board(bmask(square)); }
-
+        
         //need to be able to evaluate how favourable a current position is
         int eval_pos(){}
 

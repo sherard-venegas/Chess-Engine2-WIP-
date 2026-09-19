@@ -6,7 +6,7 @@
 #include "conv_needed.hpp"
 using namespace std;
 
-#define USE_32_BIT_MULTIPLICATIONS
+//#define USE_32_BIT_MULTIPLICATIONS
 
 //creates a psuedo random 64 bit number
 uint64_t random_uint64(){
@@ -148,9 +148,9 @@ int transform(uint64_t b, uint64_t magic, int bits){
 //looks for magics by making all possible blocker baord combos and finding the best suited magic number
 
 uint64_t find_magic(int sq, int m, int bishop){
-    // a is the attacks, used is the usd attacks and b is the occupancies
-    uint64_t mask, used[4096], magic;
-    uint64_t* a = bishop ? b_atk_tables[sq] : r_atk_tables[sq];
+    // a is the attacks, used is the usd attacks and o is the occupancies
+    uint64_t mask, a[4096], magic;
+    uint64_t* used = bishop ? b_atk_tables[sq] : r_atk_tables[sq];
     uint64_t* o = bishop ? b_occ_tables[sq] : r_occ_tables[sq];
     int i, j, k, n, fail;
     //figures out which mask to use based on if we are using the bihop board or not and counts how many
@@ -179,10 +179,13 @@ uint64_t find_magic(int sq, int m, int bishop){
     return 0ULL;
 }
 
-void find_all_sq_magics(int bishop){
+void find_all_sq_magics(){
     int square;
-    uint64_t* magics = bishop ? b_magics : r_magics;
-    for(square = 0; square < 2; square++){
-        magics[square] = find_magic(square, RBits[square], 0);
+    for(square = 0; square < 64; square++){
+        r_magics[square] = find_magic(square, RBits[square], 0);
+    }
+
+    for(square = 0; square < 64; square++){
+        b_magics[square] = find_magic(square, BBits[square], 1);
     }
 }

@@ -8,10 +8,9 @@
 #include "engine.cpp"
 using namespace std;
 
-class Board
+class Board: public Engine
 {
     private:
-        int king_squares[2];
         int curr_side;
         //black bitboards
         uint64_t black_pawn = 0x00000000;
@@ -73,7 +72,6 @@ class Board
                 else{
                     switch(cc){
                         case 'K':
-                            king_squares[0] = ind;
                             white_king += (uint64_t)1 << ind;
                             break;
                         case 'Q':
@@ -92,7 +90,6 @@ class Board
                             white_pawn += (uint64_t)1 << ind;
                             break;
                         case 'k':
-                            king_squares[1] = ind;
                             black_king += (uint64_t)1 << ind;
                             break;
                         case 'q':
@@ -264,41 +261,6 @@ class Board
             return coord.at(sq);
         }
 
-        //this is to figure out the address of thetarget board and the piece to be moved board
-        uint64_t* figure_board(uint64_t from){
-            uint64_t target_sq = 1 << from;
-
-            if(target_sq & white_pawn > 0){ return &white_pawn; }
-
-            else if(target_sq & white_pawn > 0){ return &white_pawn; }
-
-            else if(target_sq & white_knight > 0){ return &white_knight; }
-
-            else if(target_sq & white_bishop > 0){ return &white_bishop; }
-
-            else if(target_sq & white_rook > 0){ return &white_rook; }
-
-            else if(target_sq & white_queen > 0){ return &white_queen; }
-
-            else if(target_sq & white_king > 0){ return &white_king; }
-
-            else if(target_sq & black_pawn > 0){ return &black_pawn; }
-
-            else if(target_sq & black_knight > 0){ return &black_knight; }
-
-            else if(target_sq & black_bishop > 0){ return &black_bishop; }
-
-            else if(target_sq & black_rook > 0){ return &black_rook; }
-
-            else if(target_sq & black_queen > 0){ return &black_queen; }
-
-            else if(target_sq & black_king > 0){ return &black_king; }
-
-            else{
-                return nullptr;
-            }
-        }
-
         bool valid_sq(string sq){
             try{
                 //we use Map.at( {data type of index} var_name ) as it returns a runtime error if the index does not exist
@@ -310,44 +272,6 @@ class Board
                 return false;
             }
         }
-
-        void undo_move(int from, int target, uint64_t* piece_board, uint64_t* taken_board){
-            *piece_board -= ((uint64_t) 1 << target);
-            *piece_board += ((uint64_t) 1 << from);
-
-            if(taken_board != nullptr){ *taken_board += ((uint64_t)1 << target); }
-        }
-
-        bool is_legal(int from, int target, uint64_t* piece_board, uint64_t* taken_board){
-            if(piece_board == nullptr){ return false; }
-
-            else if(taken_board != nullptr){
-                if(piece_board == taken_board){ return false; }
-
-                else{ return same_team(taken_board); }
-            }
-        }
-
-        bool same_team(uint64_t* taken_board){
-            uint64_t* pawn_board = curr_player ? &white_pawn : &black_pawn;
-            uint64_t* knight_board = curr_player ? &white_knight : &black_knight;
-            uint64_t* bishop_board = curr_player ? &white_bishop : &black_bishop;
-            uint64_t* rook_board = curr_player ? &white_rook : &black_rook;
-            uint64_t* queen_board = curr_player ? &white_queen : &black_queen;
-            uint64_t* king_board = curr_player ? &white_king : &black_king;
-
-            if(taken_board == pawn_board || taken_board == knight_board || taken_board == bishop_board ||
-            taken_board == rook_board || taken_board == queen_board || taken_board == king_board){
-                return true;
-            }
-            else{ return false; }
-        }
-
-        bool check_king(){ return is_atkd(king_squares[curr_player]); }
-
-        bool is_atkd(int square){}
-
-        bool end_game(){}
 
         //get functions for the bitboards for the engine testing
 

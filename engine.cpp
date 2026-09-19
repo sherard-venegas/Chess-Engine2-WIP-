@@ -12,6 +12,7 @@ class Engine
 {
     private:
         int ahead;
+        int curr_player = white;
         //black bitboards
         uint64_t black_pawn = 0x00000000;
         uint64_t black_knight = 0x00000000;
@@ -52,8 +53,6 @@ class Engine
             white_knight = WN;
             white_pawn = WP;
             ahead = 10;
-            find_all_sq_magics(0);
-            find_all_sq_magics(1);
         }
 
         void set_piles(int piles){
@@ -150,22 +149,6 @@ class Engine
             }
         }
 
-        void print_board(uint64_t num){
-            uint64_t com = 1;
-            int i = 0;
-            uint64_t bor = num;
-            while( i < 64){
-                uint64_t res = (com & bor);
-                if(res){ cout << " 1 "; }
-                else{ cout << " 0 "; }
-
-                if(i % 8 == 7){ cout << "\n"; }
-
-                i++;
-                com = (com << 1);
-            }
-        }
-
         //piece attacks
         uint64_t pawn_attacks(int play){
             uint64_t attacks = 0;
@@ -218,6 +201,48 @@ class Engine
             return attacks;
         }
 
+        uint64_t slider_atk(int sq, int bishop){
+            uint64_t all_b = black_king + black_queen + black_rook + black_bishop + black_knight + black_pawn;
+            all_b += white_king + white_queen + white_rook + white_bishop + white_knight + white_pawn;
+
+            uint64_t blockers = all_b & (bishop ? bishop_blk_m[sq] : rook_blk_m[sq]);
+            print_board(blockers);
+            cout << "\n";
+
+            int index = bishop ? transform(blockers, b_magics[sq], BBits[sq]) : transform(blockers, r_magics[sq], RBits[sq]);
+            
+            return (bishop ? b_atk_tables[sq][index] : r_atk_tables[sq][index]);
+        }
+
+        uint64_t get_all_atks(uint64_t board, int bishop){
+            uint64_t atks = 0ULL;
+
+            while(board > 0){
+                int ind = get_lsb_ind(board);
+                board &= (board - 1);
+                atks |= slider_atk(ind, bishop);
+            }
+
+            return atks;
+        }
+
+        uint64_t rook_attacks(int play){
+            uint64_t curr_board = play ? black_rook : white_rook;
+            return get_all_atks(curr_board, 0);
+        }
+
+        uint64_t bishop_attacks(int play){
+            uint64_t curr_board = play ? black_bishop : white_bishop;
+            return get_all_atks(curr_board, 1);
+        }
+
+        uint64_t queen_attacks(int play){
+            uint64_t curr_board = play ? black_queen : white_queen;
+            uint64_t atks = get_all_atks(curr_board, 0);
+            atks |= get_all_atks(curr_board, 1);
+            return atks;
+        }
+
         void print_mask_funcR(int square){ print_board(rmask(square)); }
 
         void print_mask_funcB(int square){ print_board(bmask(square)); }
@@ -265,6 +290,35 @@ class Engine
             }
         }
 
+        bool same_team(uint64_t* taken_board){
+            uint64_t* pawn_board = curr_player ? &white_pawn : &black_pawn;
+            uint64_t* knight_board = curr_player ? &white_knight : &black_knight;
+            uint64_t* bishop_board = curr_player ? &white_bishop : &black_bishop;
+            uint64_t* rook_board = curr_player ? &white_rook : &black_rook;
+            uint64_t* queen_board = curr_player ? &white_queen : &black_queen;
+            uint64_t* king_board = curr_player ? &white_king : &black_king;
+
+            if(taken_board == pawn_board || taken_board == knight_board || taken_board == bishop_board ||
+            taken_board == rook_board || taken_board == queen_board || taken_board == king_board){
+                return true;
+            }
+            else{ return false; }
+        }
+
+        bool is_legal(int from, int target, uint64_t* piece_board, uint64_t* taken_board){
+            if(piece_board == nullptr){ return false; }
+
+            else if(taken_board != nullptr){
+                if(piece_board == taken_board){ return false; }
+
+                else if( same_team(taken_board) ){ return false; }
+            }
+
+            else if( king_check(curr_player) ){ return false; }
+
+            else{ return true; }
+        }
+
         //need functions to make and undo moves, paramaeters subject to change
         void make_move(int pos, int target){
             uint64_t* from = figure_board(pos);
@@ -280,5 +334,21 @@ class Engine
             if(taken_p != nullptr){ *taken_p += ( (uint64_t) 1 << target ); }
         }
 
-        bool valid_move(){}
+        bool king_check(int play){ return is_atkd( get_lsb_ind(play ? black_king : white_king), play); }
+
+        bool is_atkd(int square, int play){
+            uint64_t enemy_atks = king_attacks(play) | queen_attacks(play) | rook_attacks(play)
+                                  | bishop_attacks(play) | knight_attacks(play) | pawn_attacks(play);
+            return (1ULL << square) & enemy_atks;
+        }
+
+        bool is_stale(){
+            bool check = king_check(curr_player);
+            uint64_t attacks = king_attacks(curr_player) | queen_attacks(curr_player) | rook_attacks(curr_player)
+                                  | bishop_attacks(curr_player) | knight_attacks(curr_player) | pawn_attacks(curr_player);
+            
+            return (attacks == 0) && !check;
+        }
+
+        bool end_game(){}
 };

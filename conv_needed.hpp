@@ -114,3 +114,17 @@ void print_board(uint64_t num){
         com = (com << 1);
     }
 }
+
+uint64_t north_fill(uint64_t board){
+    board |= (board >> 8);
+    board |= (board >> 16);
+    board |= (board >> 32);
+    return board;
+}
+
+uint64_t south_fill(uint64_t board){
+    board |= (board << 8);
+    board |= (board << 16);
+    board |= (board << 32);
+    return board;
+}

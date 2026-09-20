@@ -11,29 +11,31 @@ using namespace std;
 class Board: public Engine
 {
     private:
-        int curr_side;
+        int en_pass_sq = -1;
+        int c_rights = 0;
+        int curr_player = white;
         //black bitboards
-        uint64_t black_pawn = 0x00000000;
-        uint64_t black_knight = 0x00000000;
-        uint64_t black_bishop = 0x00000000;
-        uint64_t black_rook = 0x00000000;
-        uint64_t black_queen = 0x00000000;
-        uint64_t black_king = 0x00000000;
+        uint64_t black_pawn = 0x0000000000000000;
+        uint64_t black_knight = 0x0000000000000000;
+        uint64_t black_bishop = 0x0000000000000000;
+        uint64_t black_rook = 0x0000000000000000;
+        uint64_t black_queen = 0x0000000000000000;
+        uint64_t black_king = 0x0000000000000000;
         //white bitboards
-        uint64_t white_pawn = 0x00000000;
-        uint64_t white_knight = 0x00000000;
-        uint64_t white_bishop = 0x00000000;
-        uint64_t white_rook = 0x00000000;
-        uint64_t white_queen = 0x00000000;
-        uint64_t white_king = 0x00000000;
+        uint64_t white_pawn = 0x0000000000000000;
+        uint64_t white_knight = 0x0000000000000000;
+        uint64_t white_bishop = 0x0000000000000000;
+        uint64_t white_rook = 0x0000000000000000;
+        uint64_t white_queen = 0x0000000000000000;
+        uint64_t white_king = 0x0000000000000000;
         //not rank, the first bit next to the semi colon is the LSB
         uint64_t not_A_file = 0b1111111011111110111111101111111011111110111111101111111011111110;
         uint64_t not_B_file = 0b1111110111111101111111011111110111111101111111011111110111111101;
         uint64_t not_G_file = 0b1011111110111111101111111011111110111111101111111011111110111111;
         uint64_t not_H_file = 0b0111111101111111011111110111111101111111011111110111111101111111;
+        uint64_t seventh_rank = 0x000000000000FF00;
+        uint64_t second_rank = 0x00FF000000000000;
 
-        int castle_rights;
-        int curr_player = white;
         Engine bob;
 
     public:
@@ -118,16 +120,16 @@ class Board: public Engine
                     
                     switch(cc){
                         case 'K':
-                            castle_rights++;
+                            c_rights++;
                             break;
                         case 'Q':
-                            castle_rights += 2;
+                            c_rights += 2;
                             break;
                         case 'k':
-                            castle_rights += 4;
+                            c_rights += 4;
                             break;
                         case 'q':
-                            castle_rights += 8;
+                            c_rights += 8;
                             break;
                         default:
                             break;
@@ -218,19 +220,22 @@ class Board: public Engine
 
             uint64_t* piece_board = figure_board(f);
             uint64_t* taken_board = figure_board(f);
+            uint64_t atk_map = right_move(piece_board, curr_player);
 
             *piece_board += ( (uint64_t) 1 << t );
             *piece_board -= ( (uint64_t) 1 << f );
 
             if(taken_board != nullptr){ *taken_board -= ((uint64_t) 1 << t);}
 
-            while( !is_legal(f, t, piece_board, taken_board) ){
+            while( !is_legal(f, t, piece_board, taken_board, atk_map) ){
                 cout << "enter the source square: ";
                 f = choose_sq();
 
                 cout << "enter the target square, enter same square as source to reselect";
                 t = choose_sq();
             }
+
+
         }
 
         int choose_sq(){

@@ -13,25 +13,29 @@ class Engine
     private:
         int ahead;
         int curr_player = white;
+        int en_pass_sq = -1;
+        int c_rights = 0;
         //black bitboards
-        uint64_t black_pawn = 0x00000000;
-        uint64_t black_knight = 0x00000000;
-        uint64_t black_bishop = 0x00000000;
-        uint64_t black_rook = 0x00000000;
-        uint64_t black_queen = 0x00000000;
-        uint64_t black_king = 0x00000000;
+        uint64_t black_pawn = 0x0000000000000000;
+        uint64_t black_knight = 0x0000000000000000;
+        uint64_t black_bishop = 0x0000000000000000;
+        uint64_t black_rook = 0x0000000000000000;
+        uint64_t black_queen = 0x0000000000000000;
+        uint64_t black_king = 0x0000000000000000;
         //white bitboards
-        uint64_t white_pawn = 0x00000000;
-        uint64_t white_knight = 0x00000000;
-        uint64_t white_bishop = 0x00000000;
-        uint64_t white_rook = 0x00000000;
-        uint64_t white_queen = 0x00000000;
-        uint64_t white_king = 0x00000000;
+        uint64_t white_pawn = 0x0000000000000000;
+        uint64_t white_knight = 0x0000000000000000;
+        uint64_t white_bishop = 0x0000000000000000;
+        uint64_t white_rook = 0x0000000000000000;
+        uint64_t white_queen = 0x0000000000000000;
+        uint64_t white_king = 0x0000000000000000;
         //not rank, the first bit next to the semi colon is the LSB
         uint64_t not_A_file = 0b1111111011111110111111101111111011111110111111101111111011111110;
         uint64_t not_B_file = 0b1111110111111101111111011111110111111101111111011111110111111101;
         uint64_t not_G_file = 0b1011111110111111101111111011111110111111101111111011111110111111;
         uint64_t not_H_file = 0b0111111101111111011111110111111101111111011111110111111101111111;
+        uint64_t seventh_rank = 0x000000000000FF00;
+        uint64_t second_rank = 0x00FF000000000000;
 
     public:
         Engine ()
@@ -60,50 +64,19 @@ class Engine
         }
 
         //sets the boards for the begining
-        void set_boards(int board[64]){
-            for(int i = 0; i < 64; i++){
-                int curr_piece = board[i];
-                switch(curr_piece){
-                    case k:
-                        black_king += (( (uint64_t) 1 ) << i);
-                        break;
-                    case q:
-                        black_queen += (( (uint64_t) 1 ) << i);
-                        break;
-                    case b:
-                        black_bishop += (( (uint64_t) 1 ) << i);
-                        break;
-                    case n:
-                        black_knight += (( (uint64_t) 1 ) << i);
-                        break;
-                    case r:
-                        black_rook += (( (uint64_t) 1 ) << i);
-                        break;
-                    case p:
-                        black_pawn += (( (uint64_t) 1 ) << i);
-                        break;
-                    case K:
-                        white_king += (( (uint64_t) 1 ) << i);
-                        break;
-                    case Q:
-                        white_queen += (( (uint64_t) 1 ) << i);
-                        break;
-                    case B:
-                        white_bishop += (( (uint64_t) 1 ) << i);
-                        break;
-                    case N:
-                        white_knight += (( (uint64_t) 1 ) << i);
-                        break;
-                    case R:
-                        white_rook += (( (uint64_t) 1 ) << i);
-                        break;
-                    case P:
-                        white_pawn += (( (uint64_t) 1 ) << i);
-                        break;
-                    default:
-                        break;
-                }
-            }
+        void set_boards(uint64_t BK, uint64_t BQ, uint64_t BR, uint64_t BB, uint64_t BN, uint64_t BP, uint64_t WK, uint64_t WQ, uint64_t WR, uint64_t WB, uint64_t WN, uint64_t WP){
+            black_king = BK;
+            black_queen = BQ;
+            black_rook = BR;
+            black_bishop = BB;
+            black_knight = BN;
+            black_pawn = BP;
+            white_king = WK;
+            white_queen = WQ;
+            white_rook = WR;
+            white_bishop = WB;
+            white_knight = WN;
+            white_pawn = WP;
         }
 
         void print_bitb(int num){
@@ -150,9 +123,8 @@ class Engine
         }
 
         //piece attacks
-        uint64_t pawn_attacks(int play){
+        uint64_t pawn_atk_map(int play, uint64_t pawns){
             uint64_t attacks = 0;
-            uint64_t pawns = play ? black_pawn : white_pawn;
 
             if(play){
                 attacks |= ((not_A_file & pawns) << 7);
@@ -166,9 +138,58 @@ class Engine
             return attacks;
         }
 
-        uint64_t knight_attacks(int play){
+        uint64_t pawn_move_map(int play, uint64_t pawns){
+            uint64_t moves = 0;
+            uint64_t blockers = black_king | black_queen | black_rook | black_bishop | black_knight | black_pawn;
+            blockers |= white_king | white_queen | white_rook | white_bishop | white_knight | white_pawn;
+            blockers ^= pawns; //removes pawns
+
+            //depending on the current colour playing does a south or north fill
+            blockers &= play ? south_fill(pawns) : north_fill(pawns);//this line removes unnessesscary blockers
+            blockers = play ? south_fill(blockers) : north_fill(blockers); //takes into account moves that go past them 
+
+            if(play){
+                moves |= (seventh_rank & pawns) << 16;
+                moves |= pawns << 8;
+            }
+            else{
+                moves |= (second_rank & pawns) >> 16;
+                moves |= pawns >> 8;
+            }
+
+            //bitwise & moves and pawns to take account the pawns that block others movements and merges them with blockers
+            blockers |= (moves & pawns);
+            blockers &= (moves); //finds the moves which are not possible
+            return (blockers ^ moves); // uses xor so that the not possible moves are removed from the bitboard of all moves
+        }
+
+        uint64_t pawn_attacks(int play){
+            uint64_t pawns = play ? black_pawn : white_pawn;
+
+            return pawn_atk_map(play, pawns);
+        }
+
+        uint64_t pawn_attacks(int play, int square){
+            uint64_t pawns = 1ULL << square;
+
+            return pawn_atk_map(play, pawns);
+        }
+
+        //moves pawns by making a blocker map and taking out the pawn map
+        uint64_t pawn_moves(int play){
+            uint64_t pawns = play ? black_pawn : white_pawn;
+
+            return pawn_move_map(play, pawns);
+        }
+
+        uint64_t pawn_moves(int play, int square){
+            uint64_t pawns = 1ULL << square;
+
+            return pawn_move_map(play, pawns);
+        }
+
+        uint64_t kn_atk_map(int play, uint64_t knights){
             uint64_t attacks = 0;
-            uint64_t knights = play ? black_knight : white_knight;
 
             attacks |= (not_H_file & not_G_file & knights) << 10;
             attacks |= (not_H_file & knights) << 17;
@@ -183,6 +204,19 @@ class Engine
             return attacks;
         }
 
+        uint64_t knight_attacks(int play){
+            uint64_t knights = play ? black_knight : white_knight;
+
+            return kn_atk_map(play, knights);
+        }
+
+        uint64_t knight_attacks(int play, int square){
+            uint64_t knights = 1ULL << square;
+
+            return kn_atk_map(play, knights);
+        }
+
+        //king attacks doesnt get a seperate attack map function as there is only 1 king when playing proper chess 
         uint64_t king_attacks(int play){
             uint64_t attacks = 0;
             uint64_t king = play ? black_king : white_king;
@@ -206,7 +240,6 @@ class Engine
             all_b += white_king + white_queen + white_rook + white_bishop + white_knight + white_pawn;
 
             uint64_t blockers = all_b & (bishop ? bishop_blk_m[sq] : rook_blk_m[sq]);
-            print_board(blockers);
             cout << "\n";
 
             int index = bishop ? transform(blockers, b_magics[sq], BBits[sq]) : transform(blockers, r_magics[sq], RBits[sq]);
@@ -239,21 +272,21 @@ class Engine
         uint64_t queen_attacks(int play){
             uint64_t curr_board = play ? black_queen : white_queen;
             uint64_t atks = get_all_atks(curr_board, 0);
+            print_board(atks);
+            cout << "\n";
+            print_board(get_all_atks(curr_board, 1));
+            cout << "\n";
             atks |= get_all_atks(curr_board, 1);
             return atks;
         }
-
-        void print_mask_funcR(int square){ print_board(rmask(square)); }
-
-        void print_mask_funcB(int square){ print_board(bmask(square)); }
         
         //need to be able to evaluate how favourable a current position is
         int eval_pos(){}
 
+        int generate_moves(){}
+
         //a move can be encoded in binary we just need to figure out the amount of bits
         int calc_move(){}
-
-        int generate_moves(){}
 
         //this is to figure out the address of thetarget board and the piece to be moved board
         uint64_t* figure_board(uint64_t from){
@@ -305,7 +338,18 @@ class Engine
             else{ return false; }
         }
 
-        bool is_legal(int from, int target, uint64_t* piece_board, uint64_t* taken_board){
+        uint64_t right_move(uint64_t* board, int play){
+            uint64_t comp = *board;
+
+            if(comp == play ? black_king : white_king){ return king_attacks(play); }
+            else if(comp == play ? black_queen : white_queen){ return queen_attacks(play); }
+            else if(comp == play ? black_rook : white_rook){ return rook_attacks(play); }
+            else if(comp == play ? black_bishop : white_bishop){ return bishop_attacks(play); }
+            else if(comp == play ? black_knight : white_knight){ return knight_attacks(play); }
+            else{ return pawn_moves(play); }
+        }
+
+        bool is_legal(int from, int target, uint64_t* piece_board, uint64_t* taken_board, uint64_t atk_map){
             if(piece_board == nullptr){ return false; }
 
             else if(taken_board != nullptr){
@@ -314,31 +358,77 @@ class Engine
                 else if( same_team(taken_board) ){ return false; }
             }
 
+            else if( ( atk_map & (1ULL << target) ) == 0 ){ return false; }
+
             else if( king_check(curr_player) ){ return false; }
 
             else{ return true; }
         }
 
+        uint64_t* promotion_board(int promote){
+            switch(promote){
+                    case(0):
+                        return curr_player ? &black_knight : &white_knight;
+                    case(1):
+                        return curr_player ? &black_bishop : &white_bishop;
+                    case(2):
+                        return curr_player ? &black_rook : &white_rook;
+                    case(3):
+                        return curr_player ? &black_queen : &white_queen;
+                    default:
+                        return nullptr;
+                }
+        }
         //need functions to make and undo moves, paramaeters subject to change
-        void make_move(int pos, int target){
+        void make_move(int pos, int target, int spc_move, int promote){
+            //spc_move = special move aka promotion, enpassent and castling, promote tells what piece it is
             uint64_t* from = figure_board(pos);
             uint64_t* to = figure_board(pos);
+            uint64_t atk_map = right_move(from, curr_player);
 
-            if(to != nullptr){ *to -= ( (uint64_t) 1 << target ); }
+            *from -= (1ULL << pos);
+            *from += (1ULL << target);
+
+            if(to != nullptr){
+                if(spc_move == 1){ //enpassent
+                    *to -= 1ULL << ( curr_player ? (target - 8) : (target + 8) );
+                }
+                else{ *to -= ( (uint64_t) 1 << target ); }
+            }
+
+            if(spc_move == 0){//promotion
+                *promotion_board(promote) |= 1ULL << target;
+                *from -= 1ULL << target;
+            }
+
+            else if(spc_move == 2){//castling
+
+            }
         }
 
-        void undo_move(int pos, int target, uint64_t* piece_b, uint64_t* taken_p){
+        //reverses the operation done to make the move to revert the board back to its original state
+        void undo_move(int pos, int target, uint64_t* piece_b, uint64_t* taken_p, int spc_move, int promote){
             *piece_b -= ((uint64_t) 1 << target);
             *piece_b += ((uint64_t) 1 << pos);
 
-            if(taken_p != nullptr){ *taken_p += ( (uint64_t) 1 << target ); }
+            if(taken_p != nullptr){
+                if(*piece_b == (curr_player ? black_pawn : white_pawn) && target == en_pass_sq){
+                    *taken_p += 1ULL << ( curr_player ? (target - 8) : (target + 8) );
+                }
+                else{ *taken_p += ( (uint64_t) 1 << target ); }
+            }
+
+            if(promote > -1){
+                *promotion_board(promote) ^= 1ULL << target;
+                *piece_b += 1ULL << target;
+            }
         }
 
         bool king_check(int play){ return is_atkd( get_lsb_ind(play ? black_king : white_king), play); }
 
         bool is_atkd(int square, int play){
-            uint64_t enemy_atks = king_attacks(play) | queen_attacks(play) | rook_attacks(play)
-                                  | bishop_attacks(play) | knight_attacks(play) | pawn_attacks(play);
+            uint64_t enemy_atks = king_attacks(!play) | queen_attacks(!play) | rook_attacks(!play)
+                                  | bishop_attacks(!play) | knight_attacks(!play) | pawn_attacks(!play);
             return (1ULL << square) & enemy_atks;
         }
 
@@ -349,6 +439,8 @@ class Engine
             
             return (attacks == 0) && !check;
         }
+
+        bool is_mate(){}
 
         bool end_game(){}
 };

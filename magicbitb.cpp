@@ -1,8 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <cstdlib>
-#include <iostream>
-#include <ostream>
 #include "conv_needed.hpp"
 using namespace std;
 
@@ -179,6 +174,90 @@ uint64_t find_magic(int sq, int m, int bishop){
     return 0ULL;
 }
 
+void write_magics(){
+    fstream magicFile;
+    magicFile.open("r-and-b-magics.csv", ios::out);
+
+    if(magicFile.is_open()){
+        for(int i = 0; i < 64; i++){
+            magicFile << r_magics[i] << "," << b_magics[i] << "\n";
+        }
+    }
+
+    magicFile.close();
+}
+
+void write_attks(int bishop){
+    fstream attksFile;
+    bishop ? attksFile.open("bishop_attks.csv", ios::out) : attksFile.open("rook_attks.csv", ios::out);
+
+    if(attksFile.is_open()){
+        uint64_t (*tblP)[4096] = bishop ? b_atk_tables : r_atk_tables;
+        
+        for(int i = 0; i < 64; i++){
+            for(int j = 0; j < 4096; j++){
+                if(j < 4095){
+                    attksFile << tblP[i][j] << ",";
+                }
+                else{ attksFile << tblP[i][j] << "\n"; }
+            }
+        }
+
+        attksFile.close();
+    }
+    
+}
+
+void load_magics(){
+    fstream magics;
+    magics.open("r-and-b-magics.csv", ios::in);
+
+    if(magics.is_open()){
+        string line;
+        int row = 0;
+        while(getline(magics, line) && row < 64){
+            stringstream ss(line);
+            string part;
+            int col = 0;
+
+            while(getline(ss, part, 's') && col < 2){
+                col ? b_magics[row] = stoull(part) : r_magics[row] = stoull(part);
+                col++;
+            }
+
+            row++;
+        }
+    }
+
+    magics.close();
+}
+
+void load_atks(int bishop){
+    fstream atkFile;
+    bishop ? atkFile.open("bishop_attks.csv", ios::in) : atkFile.open("rook_attks.csv", ios::in);
+    uint64_t (*atkTbleP)[4096] = bishop ? b_atk_tables : r_atk_tables;
+
+    if(atkFile.is_open()){
+        string line;
+        int row = 0;
+
+        while(getline(atkFile, line) && row < 64){
+            stringstream ss(line);
+            string part;
+            int col = 0;
+
+            while(getline(ss, part, ',') && col < 4096){
+                atkTbleP[row][col] = stoull(part);
+                col++;
+            }
+
+            row++;
+        }
+    }
+
+    atkFile.close();
+}
+
 void find_all_sq_magics(){
     int square;
     for(square = 0; square < 64; square++){
@@ -188,4 +267,14 @@ void find_all_sq_magics(){
     for(square = 0; square < 64; square++){
         b_magics[square] = find_magic(square, BBits[square], 1);
     }
+
+    write_magics();
+    write_attks(0);
+    write_attks(1);
+}
+
+void load_all_tables(){
+    load_magics();
+    load_atks(0);
+    load_atks(1); 
 }

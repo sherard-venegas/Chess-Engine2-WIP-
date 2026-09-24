@@ -1,0 +1,1 @@
+Board b("K1K4Q/8/R3K3/4K3/P3K2R/P7/PP6/8 w kq - 2 6", 2);

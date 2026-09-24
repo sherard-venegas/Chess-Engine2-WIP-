@@ -1,5 +1,13 @@
 #include <map>
 #include <string>
+#include <stdio.h>
+#include <stdlib.h>
+#include <cstdlib>
+#include <iostream>
+#include <fstream>
+#include <ostream>
+#include <sstream>
+#include <string>
 using namespace std;
 
 //Making an ennumerated class for the pieces so that it can easily be converted into an integer and also be easily compared for the later use of FEN, captial = white, lower = black

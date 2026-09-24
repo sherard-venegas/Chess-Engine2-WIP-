@@ -1,10 +1,3 @@
-#include <iostream>
-#include <string>
-#include <ostream>
-#include <sstream>
-#include <cstdlib>
-#include <stdio.h>
-#include <stdlib.h>
 #include "magicbitb.cpp"
 using namespace std;
 
